@@ -6,9 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Security.Claims;
-using System.Threading.Channels;
 
 namespace JWTAuthDemo.Controllers
 {
@@ -73,8 +71,7 @@ namespace JWTAuthDemo.Controllers
                 {
                     result = new StatusCodeResult(409);
                 }
-            
-            } 
+            }
             else
             {
                 result = BadRequest();
@@ -89,5 +86,66 @@ namespace JWTAuthDemo.Controllers
         {
             return new string[] { "value 1", "value 2", "value 3" };
         }
+
+
+        [Authorize]
+        [HttpGet]
+        public ActionResult<UserModel> GetUserInfo()
+        {
+            return _userService.GetUserInfo(HttpContext.User.Identity as ClaimsIdentity);
+        }
+
+        [HttpDelete]
+        public ActionResult RemoveUser(string username, string password)
+        {
+            ActionResult result = Ok();
+            try
+            {
+                _userService.RemoveUser(username, password);
+            }
+            catch (Exception)
+            {
+                result = NotFound();
+            }
+
+            return result;
+        }
+
+        [Authorize]
+        [HttpDelete]
+        public ActionResult RemoveThisUser()
+        {
+            ActionResult result = Ok();
+            try
+            {
+                _userService.RemoveUser(HttpContext.User.Identity as ClaimsIdentity);
+            }
+            catch (Exception)
+            {
+                result = NotFound();
+            }
+
+            return result;
+        }
+
+        [Authorize]
+        [HttpPatch]
+        public ActionResult<UserModel> EditUser(UserModel updatInfo)
+        {
+            ActionResult result = null;
+            UserModel userUpdated = null;
+            try
+            {
+                userUpdated = _userService.TryUpdateUser(updateInfo);
+            }
+            catch (Exception)
+            {
+                result = NotFound();
+            }
+
+            return result;
+        }
+
+
     }
 }
