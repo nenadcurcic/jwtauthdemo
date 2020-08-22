@@ -81,14 +81,6 @@ namespace JWTAuthDemo.Controllers
         }
 
         [Authorize]
-        [HttpGet("GetValue")]
-        public ActionResult<IEnumerable<string>> Get()
-        {
-            return new string[] { "value 1", "value 2", "value 3" };
-        }
-
-
-        [Authorize]
         [HttpGet]
         public ActionResult<UserModel> GetUserInfo()
         {
