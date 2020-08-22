@@ -11,5 +11,6 @@ namespace JWTAuthDemo.Services
         ActionResult<UserModel> GetUserInfo(ClaimsIdentity claimsIdentity);
         void RemoveUser(string username, string password);
         void RemoveUser(ClaimsIdentity claimsIdentity);
+        UserModel TryUpdateUser(object updateInfo);
     }
 }

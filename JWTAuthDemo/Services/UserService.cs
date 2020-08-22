@@ -1,9 +1,11 @@
 ﻿using JWTAuthDemo.Helpers;
 using JWTAuthDemo.Model;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Security.Claims;
 
 namespace JWTAuthDemo.Services
 {
@@ -90,6 +92,26 @@ namespace JWTAuthDemo.Services
             }
                           
             return result;
+        }
+
+        public ActionResult<UserModel> GetUserInfo(ClaimsIdentity claimsIdentity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveUser(string username, string password)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveUser(ClaimsIdentity claimsIdentity)
+        {
+            throw new NotImplementedException();
+        }
+
+        public UserModel TryUpdateUser(object updateInfo)
+        {
+            throw new NotImplementedException();
         }
     }
 }

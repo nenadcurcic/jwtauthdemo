@@ -130,7 +130,7 @@ namespace JWTAuthDemo.Controllers
 
         [Authorize]
         [HttpPatch]
-        public ActionResult<UserModel> EditUser(UserModel updatInfo)
+        public ActionResult<UserModel> EditUser(UserModel updateInfo)
         {
             ActionResult result = null;
             UserModel userUpdated = null;
