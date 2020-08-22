@@ -3,6 +3,7 @@ using JWTAuthDemo.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -82,9 +83,11 @@ namespace JWTAuthDemo.Controllers
 
         [Authorize]
         [HttpGet]
+        [Route("userinfo")]
         public ActionResult<UserModel> GetUserInfo()
         {
-            return _userService.GetUserInfo(HttpContext.User.Identity as ClaimsIdentity);
+            var result = _userService.GetUserInfo(HttpContext.User.Identity as ClaimsIdentity);
+            return Ok(result);
         }
 
         [HttpDelete]
