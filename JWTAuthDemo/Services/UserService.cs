@@ -13,11 +13,13 @@ namespace JWTAuthDemo.Services
     {
         private readonly IConfiguration _config;
         private readonly string _connString;
+        public IJWTTokenService _tokenService { get; set; }
 
-        public UserService(IConfiguration config)
+        public UserService(IConfiguration config, IJWTTokenService tokenService)
         {
             _config = config;
             _connString = _config.GetConnectionString("DefaultConnection");
+            _tokenService = tokenService;
         }
 
         public UserModel AuthenticateUser(UserModel user)
@@ -94,9 +96,36 @@ namespace JWTAuthDemo.Services
             return result;
         }
 
-        public ActionResult<UserModel> GetUserInfo(ClaimsIdentity claimsIdentity)
+        public UserModel GetUserInfo(ClaimsIdentity claimsIdentity)
         {
-            throw new NotImplementedException();
+            string username = _tokenService.GetUserNameFromToken(claimsIdentity);
+
+            UserModel result = null;
+            using (SqlConnection con = new SqlConnection())
+            {
+                con.ConnectionString = _connString;
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = con;
+                    cmd.CommandText = $"SELECT * FROM UserInfo WHERE Username='{username}'";
+                    SqlDataReader rd = cmd.ExecuteReader();
+                    if (rd.Read())
+                    {
+                        result = new UserModel()
+                        {
+                            UserName = rd["Username"].ToString().Trim(),
+                            EmailAddress = rd["Email"].ToString().Trim(),
+                            FirstName = rd["FirstName"].ToString().Trim(),
+                            LastName = rd["LastName"].ToString().Trim(),
+                            Role = rd["Role"].ToString().Trim(),
+                        };
+                      
+                    }
+                    con.Close();
+                }
+            }
+            return result;
         }
 
         public void RemoveUser(string username, string password)
