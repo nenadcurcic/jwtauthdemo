@@ -130,17 +130,46 @@ namespace JWTAuthDemo.Services
 
         public void RemoveUser(string username, string password)
         {
-            throw new NotImplementedException();
+            UserModel userToDelete = new UserModel()
+            {
+                Password = password,
+                UserName = username,
+            };
+
+            if (AuthenticateUser(userToDelete) != null)
+            {
+                DeleteUserByUsername(username);
+            }
+
         }
+
 
         public void RemoveUser(ClaimsIdentity claimsIdentity)
         {
-            throw new NotImplementedException();
+            string username = _tokenService.GetUserNameFromToken(claimsIdentity);
+            DeleteUserByUsername(username);
         }
 
         public UserModel TryUpdateUser(object updateInfo)
         {
             throw new NotImplementedException();
+        }
+
+        private void DeleteUserByUsername(string username)
+        {
+            using (SqlConnection con = new SqlConnection())
+            {
+                con.ConnectionString = _connString;
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = con;
+                    cmd.CommandText = $"DELETE Users WHERE Username = '{username}''";
+                    cmd.ExecuteNonQuery();
+
+                    con.Close();
+                }
+            }
         }
     }
 }
