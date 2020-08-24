@@ -72,11 +72,13 @@ namespace JWTAuthDemo.Services
                 {
                     con.Open();
                     cmd.Connection = con;
-                  
+                  //TODO: add command lines for adding roles with new user
                     cmd.CommandText = "INSERT INTO Users (Username, Email, Password, FirstName, LastName)" +
                     $" VALUES ('{newUser.UserName}', '{newUser.EmailAddress}', '{PaasswordHashing.HashPassword(newUser.Password)}', '{newUser.FirstName}', '{newUser.LastName}')";
                       
                     cmd.ExecuteNonQuery();
+
+
                     con.Close();
                 }
             }
@@ -128,8 +130,9 @@ namespace JWTAuthDemo.Services
             return result;
         }
 
-        public void RemoveUser(string username, string password)
+        public bool RemoveUser(string username, string password)
         {
+            bool res = false;
             UserModel userToDelete = new UserModel()
             {
                 Password = password,
@@ -138,16 +141,16 @@ namespace JWTAuthDemo.Services
 
             if (AuthenticateUser(userToDelete) != null)
             {
-                DeleteUserByUsername(username);
+                res = DeleteUserByUsername(username) > 0;
             }
-
+            return res;
         }
 
 
-        public void RemoveUser(ClaimsIdentity claimsIdentity)
+        public bool RemoveUser(ClaimsIdentity claimsIdentity)
         {
             string username = _tokenService.GetUserNameFromToken(claimsIdentity);
-            DeleteUserByUsername(username);
+            return DeleteUserByUsername(username) > 0;
         }
 
         public UserModel TryUpdateUser(object updateInfo)
@@ -155,8 +158,9 @@ namespace JWTAuthDemo.Services
             throw new NotImplementedException();
         }
 
-        private void DeleteUserByUsername(string username)
+        private int DeleteUserByUsername(string username)
         {
+            int affected = 0;
             using (SqlConnection con = new SqlConnection())
             {
                 con.ConnectionString = _connString;
@@ -164,12 +168,13 @@ namespace JWTAuthDemo.Services
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = con;
-                    cmd.CommandText = $"DELETE Users WHERE Username = '{username}''";
-                    cmd.ExecuteNonQuery();
-
+                    cmd.CommandText = $"DELETE Users WHERE Username = '{username}'";
+                    affected = cmd.ExecuteNonQuery();
                     con.Close();
                 }
             }
+
+            return affected;
         }
     }
 }

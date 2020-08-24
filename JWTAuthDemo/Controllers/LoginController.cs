@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 
 namespace JWTAuthDemo.Controllers
@@ -37,6 +36,7 @@ namespace JWTAuthDemo.Controllers
 
             IActionResult response = Unauthorized();
 
+            //TODO: throw different exception if user is non existing or password not valid
             var user = _userService.AuthenticateUser(login);
 
             if (user != null)
@@ -55,7 +55,6 @@ namespace JWTAuthDemo.Controllers
             return "Welcome " + _jwtService.GetUserNameFromToken(HttpContext.User.Identity as ClaimsIdentity);
         }
 
-        [Authorize]
         [HttpPost]
         [Route("adduser")]
         public IActionResult AddUser([FromBody] UserModel newUser)
@@ -90,42 +89,40 @@ namespace JWTAuthDemo.Controllers
             return Ok(result);
         }
 
+        [Route("remove")]
         [HttpDelete]
         public ActionResult RemoveUser(string username, string password)
         {
-            ActionResult result = Ok();
-            try
+            bool result = _userService.RemoveUser(username, password);
+            if (result)
             {
-                _userService.RemoveUser(username, password);
+                return Ok();
             }
-            catch (Exception)
+            else
             {
-                result = NotFound();
+                return NotFound();
             }
-
-            return result;
         }
 
         [Authorize]
+        [Route("removethis")]
         [HttpDelete]
         public ActionResult RemoveThisUser()
         {
-            ActionResult result = Ok();
-            try
+            bool res = _userService.RemoveUser(HttpContext.User.Identity as ClaimsIdentity);
+            if (res)
             {
-                _userService.RemoveUser(HttpContext.User.Identity as ClaimsIdentity);
+                return Ok();
             }
-            catch (Exception)
+            else
             {
-                result = NotFound();
+                return NotFound();
             }
-
-            return result;
         }
 
         [Authorize]
         [HttpPatch]
-        public ActionResult<UserModel> EditUser([FromBody]UserModel updateInfo)
+        public ActionResult<UserModel> EditUser([FromBody] UserModel updateInfo)
         {
             ActionResult result = null;
             UserModel userUpdated = null;
@@ -140,7 +137,5 @@ namespace JWTAuthDemo.Controllers
 
             return result;
         }
-
-
     }
 }

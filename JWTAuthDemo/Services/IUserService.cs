@@ -9,8 +9,8 @@ namespace JWTAuthDemo.Services
         UserModel AuthenticateUser(UserModel user);
         void AddUser(UserModel newUser);
         UserModel GetUserInfo(ClaimsIdentity claimsIdentity);
-        void RemoveUser(string username, string password);
-        void RemoveUser(ClaimsIdentity claimsIdentity);
+        bool RemoveUser(string username, string password);
+        bool RemoveUser(ClaimsIdentity claimsIdentity);
         UserModel TryUpdateUser(object updateInfo);
     }
 }
