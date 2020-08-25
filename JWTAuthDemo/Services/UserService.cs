@@ -1,6 +1,5 @@
 ﻿using JWTAuthDemo.Helpers;
 using JWTAuthDemo.Model;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Data;
@@ -72,30 +71,20 @@ namespace JWTAuthDemo.Services
                 {
                     con.Open();
                     cmd.Connection = con;
-                  //TODO: add command lines for adding roles with new user
                     cmd.CommandText = "INSERT INTO Users (Username, Email, Password, FirstName, LastName)" +
                     $" VALUES ('{newUser.UserName}', '{newUser.EmailAddress}', '{PaasswordHashing.HashPassword(newUser.Password)}', '{newUser.FirstName}', '{newUser.LastName}')";
-                      
+
                     cmd.ExecuteNonQuery();
+                    cmd.CommandText = $"SELECT Id FROM Users WHERE Username = '{newUser.UserName}'";
+                    int newUserID = (int)cmd.ExecuteScalar();
 
+                    cmd.CommandText = "INSERT INTO Roles (Role, UserId)" +
+                        $"VALUES('{newUser.Role}', '{newUserID}')";
 
+                    cmd.ExecuteNonQuery();
                     con.Close();
                 }
             }
-        }
-
-        private bool CheckIfUserExists(string userName, SqlCommand cmd)
-        {
-            bool result = false;
-            
-            cmd.CommandText = $"SELECT * FROM Users WHERE Username='{userName}'";
-            SqlDataReader rd = cmd.ExecuteReader();
-            if (rd.Read())
-            {
-                result = true;
-            }
-                          
-            return result;
         }
 
         public UserModel GetUserInfo(ClaimsIdentity claimsIdentity)
@@ -110,20 +99,7 @@ namespace JWTAuthDemo.Services
                 using (SqlCommand cmd = new SqlCommand())
                 {
                     cmd.Connection = con;
-                    cmd.CommandText = $"SELECT * FROM UserInfo WHERE Username='{username}'";
-                    SqlDataReader rd = cmd.ExecuteReader();
-                    if (rd.Read())
-                    {
-                        result = new UserModel()
-                        {
-                            UserName = rd["Username"].ToString().Trim(),
-                            EmailAddress = rd["Email"].ToString().Trim(),
-                            FirstName = rd["FirstName"].ToString().Trim(),
-                            LastName = rd["LastName"].ToString().Trim(),
-                            Role = rd["Role"].ToString().Trim(),
-                        };
-                      
-                    }
+                    result = GetCurrentUserData(username, cmd);
                     con.Close();
                 }
             }
@@ -146,16 +122,116 @@ namespace JWTAuthDemo.Services
             return res;
         }
 
-
         public bool RemoveUser(ClaimsIdentity claimsIdentity)
         {
             string username = _tokenService.GetUserNameFromToken(claimsIdentity);
             return DeleteUserByUsername(username) > 0;
         }
 
-        public UserModel TryUpdateUser(object updateInfo)
+        public UserModel TryUpdateUser(UserModel updateInfo)
         {
-            throw new NotImplementedException();
+            UserModel updatedData;
+            UserModel oldData;
+            using (SqlConnection con = new SqlConnection())
+            {
+                con.ConnectionString = _connString;
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                   // SqlTransaction transaction = con.BeginTransaction();
+                    cmd.Connection = con;
+
+                    oldData = GetCurrentUserData(updateInfo.UserName, cmd);
+
+                    con.Close();
+                }
+            }
+            using (SqlConnection con = new SqlConnection())
+            {
+                con.ConnectionString = _connString;
+                con.Open();
+                using (SqlCommand cmd = new SqlCommand())
+                {
+                    cmd.Connection = con;
+                    updatedData = UpdateUserDataDifs(updateInfo, oldData);
+
+                    CommitUpdatedDatainDb(updatedData, cmd);
+
+
+                    con.Close();
+                }
+            }
+            return updatedData;
+        }
+
+        private void CommitUpdatedDatainDb(UserModel updatedData, SqlCommand cmd)
+        {
+            SqlTransaction transaction = cmd.Connection.BeginTransaction();
+
+            cmd.Transaction = transaction;
+
+            try
+            {
+                cmd.CommandText = $"UPDATE Users SET  Email = '{updatedData.EmailAddress}', FirstName = '{updatedData.FirstName}', LastName = '{updatedData.LastName}' WHERE Id = {updatedData.Id}";
+                cmd.ExecuteNonQuery();
+                cmd.CommandText = $"UPDATE Roles SET Role = '{updatedData.Role}' WHERE UserID = '{updatedData.Id}'";
+                cmd.ExecuteNonQuery();
+                transaction.Commit();
+            }
+            catch (Exception)
+            {
+                transaction.Rollback();
+            }
+        }
+
+        private UserModel GetCurrentUserData(string username, SqlCommand cmd)
+        {
+            UserModel result = null;
+            cmd.CommandText = $"SELECT * FROM UserInfo WHERE Username='{username}'";
+            SqlDataReader rd = cmd.ExecuteReader();
+            if (rd.Read())
+            {
+                result = new UserModel()
+                {
+                    Id = rd.GetInt32(0),
+                    UserName = rd["Username"].ToString().Trim(),
+                    EmailAddress = rd["Email"].ToString().Trim(),
+                    FirstName = rd["FirstName"].ToString().Trim(),
+                    LastName = rd["LastName"].ToString().Trim(),
+                    Role = rd["Role"].ToString().Trim(),
+                };
+            }
+
+            return result;
+        }
+
+        private UserModel UpdateUserDataDifs(UserModel newUserData, UserModel oldUserData)
+        {
+            UserModel res = new UserModel()
+            {
+                Id = oldUserData.Id,
+                UserName = oldUserData.UserName,
+                EmailAddress = newUserData.EmailAddress == null ? oldUserData.EmailAddress : newUserData.EmailAddress,
+                FirstName = newUserData.FirstName == null ? oldUserData.FirstName : newUserData.FirstName,
+                LastName = newUserData.LastName == null ? oldUserData.LastName : newUserData.LastName,
+                Role = newUserData.Role == null ? oldUserData.Role : newUserData.Role,
+            };
+
+            return res;
+        }
+
+        private bool CheckIfUserExists(string userName, SqlCommand cmd)
+        {
+            bool result = false;
+
+            cmd.CommandText = $"SELECT * FROM Users WHERE Username='{userName}'";
+            SqlDataReader rd = cmd.ExecuteReader();
+            if (rd.Read())
+            {
+                result = true;
+            }
+
+            return result;
         }
 
         private int DeleteUserByUsername(string username)

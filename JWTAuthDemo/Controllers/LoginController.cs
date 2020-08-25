@@ -122,20 +122,22 @@ namespace JWTAuthDemo.Controllers
 
         [Authorize]
         [HttpPatch]
+        [Route("edituser")]
         public ActionResult<UserModel> EditUser([FromBody] UserModel updateInfo)
         {
-            ActionResult result = null;
-            UserModel userUpdated = null;
+            updateInfo.UserName = _jwtService.GetUserNameFromToken(HttpContext.User.Identity as ClaimsIdentity);
+
+            UserModel userUpdated;
             try
             {
                 userUpdated = _userService.TryUpdateUser(updateInfo);
             }
             catch (Exception)
             {
-                result = NotFound();
+                return NotFound();
             }
 
-            return result;
+            return userUpdated;
         }
     }
 }
